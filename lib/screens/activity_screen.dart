@@ -738,10 +738,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> with SingleTick
     final hiddenWidgets = ref.watch(hiddenWidgetsProvider);
     if (hiddenWidgets.contains('Body Metrics')) return const SizedBox.shrink();
 
-    final weightState = ref.watch(latestWeightProvider);
-    final profileState = ref.watch(userProfileProvider);
-    final prefsState = ref.watch(userPreferencesProvider);
-
     Widget card = Card(
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.hardEdge,
@@ -753,55 +749,52 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> with SingleTick
         ),
         title: const Text('Body Metrics', style: TextStyle(fontWeight: FontWeight.bold)),
         children: [
-          weightState.when(
-            data: (healthWeight) {
-              return profileState.when(
-                data: (profile) {
-                  return prefsState.when(
-                    data: (prefs) {
-                      if (profile == null) {
-                         return const Padding(
-                           padding: EdgeInsets.all(16.0),
-                           child: Text('Please complete your profile to view body metrics.'),
-                         );
-                      }
-                      
-                      final heightCm = prefs.heightCm ?? profile['height_cm'] as double;
-                      final heightM = heightCm / 100;
-                      final age = prefs.age ?? profile['age'] as int;
-                      final genderStr = prefs.gender ?? profile['gender'] as String;
-                      
-                      // Use local prefs weight if set, else Health Connect weight, else fallback to profile
-                      final w = prefs.weightKg ?? (healthWeight > 0 ? healthWeight : (profile['weight_kg'] as double));
-                  
-                  final bmi = w / (heightM * heightM);
-                  
-                  int genderCode = genderStr.toLowerCase() == 'male' ? 1 : 0;
-                  final bodyFatPct = (1.20 * bmi) + (0.23 * age) - (10.8 * genderCode) - 5.4;
-                  final bodyFatClean = bodyFatPct < 2.0 ? 2.0 : bodyFatPct; // min body fat guard
-                  
-                  final leanMass = w * (1 - (bodyFatClean / 100));
+          Consumer(builder: (context, ref, _) {
+            final weightState = ref.watch(latestWeightProvider);
+            final profileState = ref.watch(userProfileProvider);
 
-                      return Column(
-                        children: [
-                          ListTile(title: const Text('Weight'), trailing: Text('${w.toStringAsFixed(1)} kg')),
-                          ListTile(title: const Text('BMI'), trailing: Text(bmi.toStringAsFixed(1))),
-                          ListTile(title: const Text('Body fat %'), trailing: Text('${bodyFatClean.toStringAsFixed(1)}%')),
-                          ListTile(title: const Text('Lean mass'), trailing: Text('${leanMass.toStringAsFixed(1)} kg')),
-                        ],
-                      );
-                    },
-                    loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
-                    error: (e, s) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading preferences: $e')),
+            return profileState.when(
+              data: (profile) {
+                if (profile == null) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Please complete your profile to view body metrics.'),
                   );
-                },
-                loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
-                error: (e, s) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading profile: $e')),
-              );
-            },
-            loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
-            error: (e, s) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading weight: $e')),
-          ),
+                }
+
+                final heightCm = (profile['height_cm'] as num?)?.toDouble() ?? 0;
+                final heightM = heightCm / 100;
+                final age = (profile['age'] as int?) ?? 0;
+                final genderStr = (profile['gender'] as String?) ?? 'Other';
+                final profileWeight = (profile['weight_kg'] as num?)?.toDouble() ?? 0;
+
+                final healthWeight = weightState.value ?? 0.0;
+                final w = healthWeight > 0 ? healthWeight : profileWeight;
+
+                double bmi = 0;
+                if (heightM > 0 && w > 0) {
+                  bmi = w / (heightM * heightM);
+                }
+
+                int genderCode = genderStr.toLowerCase() == 'male' ? 1 : 0;
+                final bodyFatPct = (1.20 * bmi) + (0.23 * age) - (10.8 * genderCode) - 5.4;
+                final bodyFatClean = bodyFatPct < 2.0 ? 2.0 : bodyFatPct;
+
+                final leanMass = w * (1 - (bodyFatClean / 100));
+
+                return Column(
+                  children: [
+                    ListTile(title: const Text('Weight'), trailing: Text('${w.toStringAsFixed(1)} kg')),
+                    ListTile(title: const Text('BMI'), trailing: Text(bmi.toStringAsFixed(1))),
+                    ListTile(title: const Text('Body fat %'), trailing: Text('${bodyFatClean.toStringAsFixed(1)}%')),
+                    ListTile(title: const Text('Lean mass'), trailing: Text('${leanMass.toStringAsFixed(1)} kg')),
+                  ],
+                );
+              },
+              loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+              error: (e, s) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading profile: $e')),
+            );
+          }),
           const SizedBox(height: 8),
         ],
       ),

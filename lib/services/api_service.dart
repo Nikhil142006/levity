@@ -37,7 +37,7 @@ class ApiService {
       userData['id'] = user.uid;
       userData['created_at'] = FieldValue.serverTimestamp();
 
-      await _firestore.collection('users').doc(user.uid).set(userData);
+      await _firestore.collection('users').doc(user.uid).set(userData, SetOptions(merge: true));
       return userData;
     } catch (e) {
       throw Exception('Failed to create profile: $e');
@@ -90,7 +90,21 @@ class ApiService {
 
   Future<Map<String, dynamic>> getDashboardMetrics(String firebaseUid) async {
     try {
-      final userDoc = await _firestore.collection('users').doc(firebaseUid).get();
+      String todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      final results = await Future.wait([
+        _firestore.collection('users').doc(firebaseUid).get(),
+        _firestore
+            .collection('users')
+            .doc(firebaseUid)
+            .collection('daily_metrics')
+            .doc(todayStr)
+            .get(),
+      ]);
+
+      final userDoc = results[0];
+      final metricsDoc = results[1];
+
       if (!userDoc.exists) throw Exception("User not found");
 
       final userData = userDoc.data()!;
@@ -113,14 +127,6 @@ class ApiService {
       } else if (bmi < 18.5) {
         aiInsight = "Consider adding a nutrient-dense protein shake to help build healthy lean mass.";
       }
-
-      String todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final metricsDoc = await _firestore
-          .collection('users')
-          .doc(firebaseUid)
-          .collection('daily_metrics')
-          .doc(todayStr)
-          .get();
 
       Map<String, dynamic> metricsData = {};
       if (metricsDoc.exists) {
