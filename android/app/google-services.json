@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "766893512721",
+    "project_id": "levity-6ab80",
+    "storage_bucket": "levity-6ab80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:766893512721:android:4c4bde14d23219a369b9b0",
+        "android_client_info": {
+          "package_name": "com.antigravityhealth.app.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "766893512721-8h1n8otqu329ukmsusik9cagdh3vn960.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh8n1F9mangmCph4QThUXBNG75dHq20-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "766893512721-8h1n8otqu329ukmsusik9cagdh3vn960.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
